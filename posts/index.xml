@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Posts on vbergeron.github.io</title>
+    <link>http://example.org/posts/</link>
+    <description>Recent content in Posts on vbergeron.github.io</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Fri, 21 Apr 2023 14:48:55 +0200</lastBuildDate><atom:link href="http://example.org/posts/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Field Maps</title>
+      <link>http://example.org/posts/0001-fieldmaps/</link>
+      <pubDate>Fri, 21 Apr 2023 14:48:55 +0200</pubDate>
+      
+      <guid>http://example.org/posts/0001-fieldmaps/</guid>
+      <description>Introduction Let&amp;rsquo;s talk about a kind of common issue in programing. Imagine you have a large form to fill, or a SQL table to select column from, or really any type of data where you are interested by selecting subsets of its atomic components (like form results, or SQL columns). I call this data structures field maps data, and let&amp;rsquo;s see how we can implement the using the power of the Scala 3 language.</description>
+    </item>
+    
+  </channel>
+</rss>
