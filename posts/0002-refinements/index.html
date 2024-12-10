@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>Distilling Refined Types using Scala 3 | vbergeron.github.io</title>
+<meta name="keywords" content="">
+<meta name="description" content="Introduction
+Before introducing refinement types, let&rsquo;s suppose you are a library author, and you have a tricky situation to solve. One of your library objects can refer to other objects by their name.
+Very abstract don&rsquo;t you think ? But when you start to look around, a lot of these cases exists.
+
+Relational Tables (columns registered in a table object)
+Forms
+RPC handle collections
+HTTP Routes
+
+Two main problems arise when using these :">
+<meta name="author" content="Valentin Bergeron">
+<link rel="canonical" href="https://vbergeron.github.io/posts/0002-refinements/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.d6fcd20a4fb86efa4dfac8ec95da60244cc8871042183da1ef28e3a762ad79c8.css" integrity="sha256-1vzSCk&#43;4bvpN&#43;sjsldpgJEzIhxBCGD2h7yjjp2Ktecg=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://vbergeron.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://vbergeron.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://vbergeron.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://vbergeron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://vbergeron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="en" href="https://vbergeron.github.io/posts/0002-refinements/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:url" content="https://vbergeron.github.io/posts/0002-refinements/">
+  <meta property="og:site_name" content="vbergeron.github.io">
+  <meta property="og:title" content="Distilling Refined Types using Scala 3">
+  <meta property="og:description" content="Introduction Before introducing refinement types, let’s suppose you are a library author, and you have a tricky situation to solve. One of your library objects can refer to other objects by their name.
+Very abstract don’t you think ? But when you start to look around, a lot of these cases exists.
+Relational Tables (columns registered in a table object) Forms RPC handle collections HTTP Routes Two main problems arise when using these :">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2024-12-10T22:48:55+01:00">
+    <meta property="article:modified_time" content="2024-12-10T22:48:55+01:00">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Distilling Refined Types using Scala 3">
+<meta name="twitter:description" content="Introduction
+Before introducing refinement types, let&rsquo;s suppose you are a library author, and you have a tricky situation to solve. One of your library objects can refer to other objects by their name.
+Very abstract don&rsquo;t you think ? But when you start to look around, a lot of these cases exists.
+
+Relational Tables (columns registered in a table object)
+Forms
+RPC handle collections
+HTTP Routes
+
+Two main problems arise when using these :">
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://vbergeron.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "Distilling Refined Types using Scala 3",
+      "item": "https://vbergeron.github.io/posts/0002-refinements/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Distilling Refined Types using Scala 3",
+  "name": "Distilling Refined Types using Scala 3",
+  "description": "Introduction Before introducing refinement types, let\u0026rsquo;s suppose you are a library author, and you have a tricky situation to solve. One of your library objects can refer to other objects by their name.\nVery abstract don\u0026rsquo;t you think ? But when you start to look around, a lot of these cases exists.\nRelational Tables (columns registered in a table object) Forms RPC handle collections HTTP Routes Two main problems arise when using these :\n",
+  "keywords": [
+    
+  ],
+  "articleBody": "Introduction Before introducing refinement types, let’s suppose you are a library author, and you have a tricky situation to solve. One of your library objects can refer to other objects by their name.\nVery abstract don’t you think ? But when you start to look around, a lot of these cases exists.\nRelational Tables (columns registered in a table object) Forms RPC handle collections HTTP Routes Two main problems arise when using these :\nThe user have to read the whole definition of the parent to know which fields exists (orelse the program will error at runtime) The type information is lost, and we need to either on typed getter parent.get[Int](\"field\") that could fail, or even worse, type casts. Let’s focus on the table / column exemple. I made a little modelization of it :\nsealed trait Col[T]: def values: Array[T] case class IntCol(values: Array[Int]) extends Col[Int] case class BoolCol(values: Array[Boolean]) extends Col[Boolean] case class TextCol(values: Array[String]) extends Col[String] case class Table(cols: Map[String, Col[?]]) def addCol(name: String, col: Col[?]): Table = Table(cols + (name -\u003e col)) object Table: def empty = Table[EmptyTuple, EmptyTuple](Map.empty) Nothing too complicated here, we have a common trait for Column that allow us to retrieve values, and they can be grouped into a table. Now how can we get a column from the table ?\nval table = Table.empty .addCol(\"id\", IntCol(Array(1, 2, 3))) .addCol(\"name\",TextCol(Array(\"Alice\", \"Bob\", \"Carol\"))) .addCol(\"flag\",BoolCol(Array(true, false, true))) table.cols(\"id\").asInstanceOf[Col[Int]] // fails if absent // fails is not a Col[Int] // How to know ? better read the codebase A better solution Another approach would be to strongly type field objects and use them in the API, like below.\ncase class ColRef[T](name: String) case class Table(cols: Map[ColRef[?], Col[?]]) def addCol[T](ref: ColRef[T], col: Col[T]): Table = Table(cols + (ref -\u003e col)) def apply[T](ref: ColRef[T]); Col[T] = table.cold(ref).asInstanceOf[Col[T]] // ------------ // val id = ColRef[Int](\"id\") val name = ColRef[String](\"name\") val flag = ColRef[Boolean](\"flag\") val foo = ColRef[Int](\"who cares, I can put everything here !\") val table = Table.empty .addCol(id, IntCol(Array(1, 2, 3))) .addCol(name, TextCol(Array(\"Alice\", \"Bob\", \"Carol\"))) .addCol(flag, BoolCol(Array(true, false, true))) table(id) // yay table(foo) // *boom* Better than previously, as type errors are now impossible ! But two more problems are still to be solved :\nWe can still use the wrong ColRef[T] to get data (or even worse insert the wrong reference !) We need to fish the entire codebase to know which fields are present in which table. All fields are to be declared by hand then used with the table So how can we do more ? Ready your keyboard, sharpen your Quotes, we are going to the land of macros !\nRefinements as a user Here is sneak peak of what we are going to build today :\n// Simple register your columns using plain innocent strings val table = Table.empty .addCol(\"id\", IntCol(Array(1, 2, 3))) .addCol(\"name\",TextCol(Array(\"Alice\", \"Bob\", \"Carol\"))) .addCol(\"flag\",BoolCol(Array(true, false, true))) table.schema.id // id must be there, validated at compile time We get full type safety and validation that our field is present at compile time. Also the schema here is explorable using your ide ! Hoovering over the schema, you can spot his type, a very special type.\nval schema: Schema{val id: Col[Int]; val name: Col[String]; val flag: Col[Boolean]} A way to read this is that this type is the Schema type, with three refinements corresponding to the 3 columns of our table.\nIn this article, we are going to read an see the whole implementation that leads to this result.\nImplemetation Before going more in depth, I really would like to thanks Jamie Thompson for its excellent implementation of refinement type and many other type-level-macro piece of code that were relly eye-opening for me. Especially the ops-mirror repository, which is by itself tackling a very interesting problem.\nKeeping the type information First thing we need to have a way to keep the column names and types while building the map. For this I used two type-level tuples, one for the column names and one for the column types.\nNote the usage of name.type to get the litteral type corresponding to the inputed string. Scala has a good support for these, for instance the most precise type for the number 3 is 3, which is a subtype of Int.\ncase class Table[Ns \u003c: Tuple, Ts \u003c: Tuple](cols: Map[String, Col[?]]): inline def addCol[T](name: String, col: Col[T]): Table[Tuple.Append[Ns, name.type], Tuple.Append[Ts, T]] = Table(cols + (name -\u003e col)) Setup the Schema As seen previously, the Schema object seems very alien. Let’s focus on its definition.\nclass Schema(table: Table[?, ?]) extends Selectable { def selectDynamic(name: String): Any = table.cols(name) } Selectable is the key entrypoint to the machinery and usefulness of Refinement Types When called using one of the phantom refinement field, the selectDynamic method will be applied with name as the refinement name, and the result will be casted to the refinement value (hence the Any, as we don’t care about what’s out). the table type arguments are irrelevant (hence the wildcards) because the Schema type is already crafted when its usage occurs The key thing to understand here is that the Schema class is just an empty vessel, something to weaves together our refinements.\nCrafting types In order to build type we obviously need a macro. The goal of this macro will be to take a typed table in input, and output a refined schema.\nSince the return type of our macro will be dependent on the input we will have to use infamous transparent keyword together with a token Any return type.\ncase class Table[Ns \u003c: Tuple, Ts \u003c: Tuple](cols: Map[String, Col[?]]): // addCol impl // transparent inline def schema: Any = ${ macros.schemaImpl('this) } Here is the complete macro implementation, don’t worry we are going to explain it line by line.\ndef schemaImpl[Ns \u003c: Tuple, Ts \u003c: Tuple](table: Expr[Table[Ns, Ts]])(using Quotes, Type[Ns], Type[Ts]): Expr[Any] = import quotes.reflect.* // 1 val names = utils.stringsFromTuple[Ns] // 2 val types = utils.typesFromTuple[Ts].map: // 2 case '[t] =\u003e Type.of[Col[t]] // 3 val refinements = names.zip(types).foldLeft(Type.of[Schema]: Type[?]): (acc, p) =\u003e // 4 ((acc, p): @unchecked) match // 5 case ('[acc], (l, '[e])) =\u003e Refinement(TypeRepr.of[acc], l, TypeRepr.of[e]).asType // 6 refinements match case '[refined] =\u003e '{new Schema($table).asInstanceOf[refined]} // 7 quotes.reflect.* is needed to unlock powerful macro features like type building or compile time reporting These helpers materialize the Ns tuples in a list of constant Strings, and Ts is a list of Type[?], which is the reflection entrypoint for types in scala macros. You can find the original implemention here. Here we map the columns inner type to get the desired column value. We could have specialized more there, for instance retrurning Type.of[IntCol] on case '[Int]. Using labels and types, we fold over the Schema type to build the refinement. Weird case of pattern matching which dissaloy matching Type (the case '[e] patterns) And finally we get the desired result: compile time guarantee that we can access strongly typed fields in a user-defined semi-static object.\nConclusion Building refinements is a very advanced feature of the language, that require a good understanding of the underlying machinery regarding types. The price is high, but the benefits to have reliable, auto-complete aware type-safe APIs is priceless.\nA programing language is often judged not by its features or its complexity but by the quality of its tooling. Scala suffers from the inverse problem : a poor tooling hampering a nice, concise and beatiful language.\nLet’s bring more ide support and tooling for our users, let’s use refinement types !\n",
+  "wordCount" : "1245",
+  "inLanguage": "en",
+  "datePublished": "2024-12-10T22:48:55+01:00",
+  "dateModified": "2024-12-10T22:48:55+01:00",
+  "author":{
+    "@type": "Person",
+    "name": "Valentin Bergeron"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://vbergeron.github.io/posts/0002-refinements/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "vbergeron.github.io",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://vbergeron.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://vbergeron.github.io/" accesskey="h" title="vbergeron.github.io (Alt + H)">vbergeron.github.io</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    
+    <h1 class="post-title entry-hint-parent">
+      Distilling Refined Types using Scala 3
+    </h1>
+    <div class="post-meta"><span title='2024-12-10 22:48:55 +0100 CET'>December 10, 2024</span>&nbsp;·&nbsp;Valentin Bergeron
+
+</div>
+  </header> 
+  <div class="post-content"><h1 id="introduction">Introduction<a hidden class="anchor" aria-hidden="true" href="#introduction">#</a></h1>
+<p>Before introducing refinement types, let&rsquo;s suppose you are a library author, and you have a tricky situation to solve. One of your library objects can refer to other objects by their <em>name</em>.</p>
+<p>Very abstract don&rsquo;t you think ? But when you start to look around, a lot of these cases exists.</p>
+<ul>
+<li>Relational Tables (columns registered in a table object)</li>
+<li>Forms</li>
+<li>RPC handle collections</li>
+<li>HTTP Routes</li>
+</ul>
+<p>Two main problems arise when using these :</p>
+<ul>
+<li>The user have to read the whole definition of the parent to know which fields exists (orelse the program will error at runtime)</li>
+<li>The type information is lost, and we need to either on typed getter <code>parent.get[Int](&quot;field&quot;)</code> that <em>could</em> fail, or even worse, type casts.</li>
+</ul>
+<p>Let&rsquo;s focus on the table / column exemple. I made a little modelization of it :</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#66d9ef">sealed</span> <span style="color:#66d9ef">trait</span> <span style="color:#a6e22e">Col</span><span style="color:#f92672">[</span><span style="color:#66d9ef">T</span><span style="color:#f92672">]</span><span style="color:#a6e22e">:</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">def</span> values<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Array</span><span style="color:#f92672">[</span><span style="color:#66d9ef">T</span><span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">case</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">IntCol</span><span style="color:#f92672">(</span>values<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Array</span><span style="color:#f92672">[</span><span style="color:#66d9ef">Int</span><span style="color:#f92672">])</span>      <span style="color:#66d9ef">extends</span> <span style="color:#a6e22e">Col</span><span style="color:#f92672">[</span><span style="color:#66d9ef">Int</span><span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">case</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">BoolCol</span><span style="color:#f92672">(</span>values<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Array</span><span style="color:#f92672">[</span><span style="color:#66d9ef">Boolean</span><span style="color:#f92672">])</span> <span style="color:#66d9ef">extends</span> <span style="color:#a6e22e">Col</span><span style="color:#f92672">[</span><span style="color:#66d9ef">Boolean</span><span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">case</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">TextCol</span><span style="color:#f92672">(</span>values<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Array</span><span style="color:#f92672">[</span><span style="color:#66d9ef">String</span><span style="color:#f92672">])</span>  <span style="color:#66d9ef">extends</span> <span style="color:#a6e22e">Col</span><span style="color:#f92672">[</span><span style="color:#66d9ef">String</span><span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">case</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Table</span><span style="color:#f92672">(</span>cols<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Map</span><span style="color:#f92672">[</span><span style="color:#66d9ef">String</span>, <span style="color:#66d9ef">Col</span><span style="color:#f92672">[</span><span style="color:#66d9ef">?</span><span style="color:#f92672">]])</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">def</span> addCol<span style="color:#f92672">(</span>name<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">String</span><span style="color:#f92672">,</span> col<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Col</span><span style="color:#f92672">[</span><span style="color:#66d9ef">?</span><span style="color:#f92672">])</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Table</span> <span style="color:#f92672">=</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">Table</span><span style="color:#f92672">(</span>cols <span style="color:#f92672">+</span> <span style="color:#f92672">(</span>name <span style="color:#f92672">-&gt;</span> col<span style="color:#f92672">))</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">object</span> <span style="color:#a6e22e">Table</span><span style="color:#66d9ef">:</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">def</span> <span style="color:#66d9ef">empty</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">Table</span><span style="color:#f92672">[</span><span style="color:#66d9ef">EmptyTuple</span>, <span style="color:#66d9ef">EmptyTuple</span><span style="color:#f92672">](</span><span style="color:#a6e22e">Map</span><span style="color:#f92672">.</span>empty<span style="color:#f92672">)</span>
+</span></span></code></pre></div><p>Nothing too complicated here, we have a common trait for Column that allow us to retrieve values, and they can be grouped into a table. Now how can we get a column from the table ?</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#66d9ef">val</span> table <span style="color:#66d9ef">=</span> <span style="color:#a6e22e">Table</span><span style="color:#f92672">.</span>empty
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">.</span>addCol<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;id&#34;</span><span style="color:#f92672">,</span> <span style="color:#a6e22e">IntCol</span><span style="color:#f92672">(</span><span style="color:#a6e22e">Array</span><span style="color:#f92672">(</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span> <span style="color:#ae81ff">2</span><span style="color:#f92672">,</span> <span style="color:#ae81ff">3</span><span style="color:#f92672">)))</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">.</span>addCol<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;name&#34;</span><span style="color:#f92672">,</span><span style="color:#a6e22e">TextCol</span><span style="color:#f92672">(</span><span style="color:#a6e22e">Array</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Alice&#34;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#34;Bob&#34;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#34;Carol&#34;</span><span style="color:#f92672">)))</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">.</span>addCol<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;flag&#34;</span><span style="color:#f92672">,</span><span style="color:#a6e22e">BoolCol</span><span style="color:#f92672">(</span><span style="color:#a6e22e">Array</span><span style="color:#f92672">(</span><span style="color:#66d9ef">true</span><span style="color:#f92672">,</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">,</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">)))</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>table<span style="color:#f92672">.</span>cols<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;id&#34;</span><span style="color:#f92672">).</span>asInstanceOf<span style="color:#f92672">[</span><span style="color:#66d9ef">Col</span><span style="color:#f92672">[</span><span style="color:#66d9ef">Int</span><span style="color:#f92672">]]</span>     
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">// fails if absent
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#75715e">// fails is not a Col[Int]
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#75715e">// How to know ? better read the codebase
+</span></span></span></code></pre></div><h1 id="a-better-solution">A better solution<a hidden class="anchor" aria-hidden="true" href="#a-better-solution">#</a></h1>
+<p>Another approach would be to strongly type field objects and use them in the API, like below.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#66d9ef">case</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ColRef</span><span style="color:#f92672">[</span><span style="color:#66d9ef">T</span><span style="color:#f92672">](</span>name<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">String</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">case</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Table</span><span style="color:#f92672">(</span>cols<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Map</span><span style="color:#f92672">[</span><span style="color:#66d9ef">ColRef</span><span style="color:#f92672">[</span><span style="color:#66d9ef">?</span><span style="color:#f92672">]</span>, <span style="color:#66d9ef">Col</span><span style="color:#f92672">[</span><span style="color:#66d9ef">?</span><span style="color:#f92672">]])</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">def</span> addCol<span style="color:#f92672">[</span><span style="color:#66d9ef">T</span><span style="color:#f92672">](</span>ref<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">ColRef</span><span style="color:#f92672">[</span><span style="color:#66d9ef">T</span><span style="color:#f92672">],</span> col<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Col</span><span style="color:#f92672">[</span><span style="color:#66d9ef">T</span><span style="color:#f92672">])</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Table</span> <span style="color:#f92672">=</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">Table</span><span style="color:#f92672">(</span>cols <span style="color:#f92672">+</span> <span style="color:#f92672">(</span>ref <span style="color:#f92672">-&gt;</span> col<span style="color:#f92672">))</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">def</span> apply<span style="color:#f92672">[</span><span style="color:#66d9ef">T</span><span style="color:#f92672">](</span>ref<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">ColRef</span><span style="color:#f92672">[</span><span style="color:#66d9ef">T</span><span style="color:#f92672">]);</span> <span style="color:#a6e22e">Col</span><span style="color:#f92672">[</span><span style="color:#66d9ef">T</span><span style="color:#f92672">]</span> <span style="color:#66d9ef">=</span>
+</span></span><span style="display:flex;"><span>      table<span style="color:#f92672">.</span>cold<span style="color:#f92672">(</span>ref<span style="color:#f92672">).</span>asInstanceOf<span style="color:#f92672">[</span><span style="color:#66d9ef">Col</span><span style="color:#f92672">[</span><span style="color:#66d9ef">T</span><span style="color:#f92672">]]</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// ------------ //
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">val</span> id <span style="color:#66d9ef">=</span> <span style="color:#a6e22e">ColRef</span><span style="color:#f92672">[</span><span style="color:#66d9ef">Int</span><span style="color:#f92672">](</span><span style="color:#e6db74">&#34;id&#34;</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">val</span> name <span style="color:#66d9ef">=</span> <span style="color:#a6e22e">ColRef</span><span style="color:#f92672">[</span><span style="color:#66d9ef">String</span><span style="color:#f92672">](</span><span style="color:#e6db74">&#34;name&#34;</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">val</span> flag <span style="color:#66d9ef">=</span> <span style="color:#a6e22e">ColRef</span><span style="color:#f92672">[</span><span style="color:#66d9ef">Boolean</span><span style="color:#f92672">](</span><span style="color:#e6db74">&#34;flag&#34;</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">val</span> foo <span style="color:#66d9ef">=</span> <span style="color:#a6e22e">ColRef</span><span style="color:#f92672">[</span><span style="color:#66d9ef">Int</span><span style="color:#f92672">](</span><span style="color:#e6db74">&#34;who cares, I can put everything here !&#34;</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">val</span> table <span style="color:#66d9ef">=</span> <span style="color:#a6e22e">Table</span><span style="color:#f92672">.</span>empty
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">.</span>addCol<span style="color:#f92672">(</span>id<span style="color:#f92672">,</span> <span style="color:#a6e22e">IntCol</span><span style="color:#f92672">(</span><span style="color:#a6e22e">Array</span><span style="color:#f92672">(</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span> <span style="color:#ae81ff">2</span><span style="color:#f92672">,</span> <span style="color:#ae81ff">3</span><span style="color:#f92672">)))</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">.</span>addCol<span style="color:#f92672">(</span>name<span style="color:#f92672">,</span> <span style="color:#a6e22e">TextCol</span><span style="color:#f92672">(</span><span style="color:#a6e22e">Array</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Alice&#34;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#34;Bob&#34;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#34;Carol&#34;</span><span style="color:#f92672">)))</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">.</span>addCol<span style="color:#f92672">(</span>flag<span style="color:#f92672">,</span> <span style="color:#a6e22e">BoolCol</span><span style="color:#f92672">(</span><span style="color:#a6e22e">Array</span><span style="color:#f92672">(</span><span style="color:#66d9ef">true</span><span style="color:#f92672">,</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">,</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">)))</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>table<span style="color:#f92672">(</span>id<span style="color:#f92672">)</span>  <span style="color:#75715e">// yay
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>table<span style="color:#f92672">(</span>foo<span style="color:#f92672">)</span> <span style="color:#75715e">// *boom*
+</span></span></span></code></pre></div><p>Better than previously, as type errors are now impossible ! But two more problems are still to be solved :</p>
+<ul>
+<li>We can still use the wrong <code>ColRef[T]</code> to get data (or even worse insert the wrong reference !)</li>
+<li>We need to fish the entire codebase to know which fields are present in which table.</li>
+<li>All fields are to be declared by hand then used with the table</li>
+</ul>
+<p>So how can we do more ? Ready your keyboard, sharpen your <code>Quotes</code>, we are going to the land of macros !</p>
+<h1 id="refinements-as-a-user">Refinements as a user<a hidden class="anchor" aria-hidden="true" href="#refinements-as-a-user">#</a></h1>
+<p>Here is sneak peak of what we are going to build today :</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#75715e">// Simple register your columns using plain innocent strings
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">val</span> table <span style="color:#66d9ef">=</span> <span style="color:#a6e22e">Table</span><span style="color:#f92672">.</span>empty
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">.</span>addCol<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;id&#34;</span><span style="color:#f92672">,</span> <span style="color:#a6e22e">IntCol</span><span style="color:#f92672">(</span><span style="color:#a6e22e">Array</span><span style="color:#f92672">(</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span> <span style="color:#ae81ff">2</span><span style="color:#f92672">,</span> <span style="color:#ae81ff">3</span><span style="color:#f92672">)))</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">.</span>addCol<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;name&#34;</span><span style="color:#f92672">,</span><span style="color:#a6e22e">TextCol</span><span style="color:#f92672">(</span><span style="color:#a6e22e">Array</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Alice&#34;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#34;Bob&#34;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#34;Carol&#34;</span><span style="color:#f92672">)))</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">.</span>addCol<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;flag&#34;</span><span style="color:#f92672">,</span><span style="color:#a6e22e">BoolCol</span><span style="color:#f92672">(</span><span style="color:#a6e22e">Array</span><span style="color:#f92672">(</span><span style="color:#66d9ef">true</span><span style="color:#f92672">,</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">,</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">)))</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>table<span style="color:#f92672">.</span>schema<span style="color:#f92672">.</span>id <span style="color:#75715e">// id must be there, validated at compile time
+</span></span></span></code></pre></div><p>We get full type safety and validation that our field is present at compile time. Also the schema here is explorable using your ide ! Hoovering over the schema, you can spot his type, a very special type.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#66d9ef">val</span> schema<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Schema</span><span style="color:#f92672">{</span><span style="color:#66d9ef">val</span> <span style="color:#66d9ef">id:</span> <span style="color:#66d9ef">Col</span><span style="color:#f92672">[</span><span style="color:#66d9ef">Int</span><span style="color:#f92672">];</span> <span style="color:#66d9ef">val</span> name<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Col</span><span style="color:#f92672">[</span><span style="color:#66d9ef">String</span><span style="color:#f92672">];</span> <span style="color:#66d9ef">val</span> flag<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Col</span><span style="color:#f92672">[</span><span style="color:#66d9ef">Boolean</span><span style="color:#f92672">]}</span>
+</span></span></code></pre></div><p>A way to read this is that this type is the <code>Schema</code> type, with three <em>refinements</em> corresponding to the 3 columns of our table.</p>
+<p>In this article, we are going to read an see the whole implementation that leads to this result.</p>
+<h1 id="implemetation">Implemetation<a hidden class="anchor" aria-hidden="true" href="#implemetation">#</a></h1>
+<p>Before going more in depth, I really would like to thanks Jamie Thompson for its excellent implementation of refinement type and many other type-level-macro piece of code that were relly eye-opening for me. Especially the <a href="https://github.com/bishabosha/ops-mirror">ops-mirror</a> repository, which is by itself tackling a very interesting problem.</p>
+<h2 id="keeping-the-type-information">Keeping the type information<a hidden class="anchor" aria-hidden="true" href="#keeping-the-type-information">#</a></h2>
+<p>First thing we need to have a way to keep the column names and types while building the map. For this I used two type-level tuples, one for the column names and one for the column types.</p>
+<p>Note the usage of <code>name.type</code> to get the litteral type corresponding to the inputed string. Scala has a good support for these, for instance the most precise type for the number <code>3</code> is <code>3</code>, which is a subtype of <code>Int</code>.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#66d9ef">case</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Table</span><span style="color:#f92672">[</span><span style="color:#66d9ef">Ns</span> <span style="color:#66d9ef">&lt;:</span> <span style="color:#66d9ef">Tuple</span>, <span style="color:#66d9ef">Ts</span> <span style="color:#66d9ef">&lt;:</span> <span style="color:#66d9ef">Tuple</span><span style="color:#f92672">](</span>cols<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Map</span><span style="color:#f92672">[</span><span style="color:#66d9ef">String</span>, <span style="color:#66d9ef">Col</span><span style="color:#f92672">[</span><span style="color:#66d9ef">?</span><span style="color:#f92672">]])</span><span style="color:#66d9ef">:</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">inline</span> <span style="color:#66d9ef">def</span> <span style="color:#66d9ef">addCol</span><span style="color:#f92672">[</span><span style="color:#66d9ef">T</span><span style="color:#f92672">](</span>name<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">String</span><span style="color:#f92672">,</span> col<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Col</span><span style="color:#f92672">[</span><span style="color:#66d9ef">T</span><span style="color:#f92672">])</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Table</span><span style="color:#f92672">[</span><span style="color:#66d9ef">Tuple.Append</span><span style="color:#f92672">[</span><span style="color:#66d9ef">Ns</span>, <span style="color:#66d9ef">name.</span><span style="color:#66d9ef">type</span><span style="color:#f92672">]</span>, <span style="color:#66d9ef">Tuple.Append</span><span style="color:#f92672">[</span><span style="color:#66d9ef">Ts</span>, <span style="color:#66d9ef">T</span><span style="color:#f92672">]]</span> <span style="color:#66d9ef">=</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">Table</span><span style="color:#f92672">(</span>cols <span style="color:#f92672">+</span> <span style="color:#f92672">(</span>name <span style="color:#f92672">-&gt;</span> col<span style="color:#f92672">))</span>
+</span></span></code></pre></div><h2 id="setup-the-schema">Setup the Schema<a hidden class="anchor" aria-hidden="true" href="#setup-the-schema">#</a></h2>
+<p>As seen previously, the Schema object seems very alien. Let&rsquo;s focus on its definition.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Schema</span><span style="color:#f92672">(</span>table<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Table</span><span style="color:#f92672">[</span><span style="color:#66d9ef">?</span>, <span style="color:#66d9ef">?</span><span style="color:#f92672">])</span> <span style="color:#66d9ef">extends</span> <span style="color:#a6e22e">Selectable</span> <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">def</span> selectDynamic<span style="color:#f92672">(</span>name<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">String</span><span style="color:#f92672">)</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Any</span> <span style="color:#f92672">=</span> table<span style="color:#f92672">.</span>cols<span style="color:#f92672">(</span>name<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">}</span>
+</span></span></code></pre></div><ul>
+<li><code>Selectable</code> is the key entrypoint to the machinery and usefulness of Refinement Types</li>
+<li>When called using one of the phantom refinement field, the <code>selectDynamic</code> method will be applied with <code>name</code> as the refinement name, and the result will be casted to the refinement value (hence the <code>Any</code>, as we don&rsquo;t care about what&rsquo;s out).</li>
+<li>the table type arguments are irrelevant (hence the wildcards) because the Schema type is already crafted when its usage occurs</li>
+</ul>
+<p>The key thing to understand here is that the <code>Schema</code> class is just an empty vessel, something to weaves together our refinements.</p>
+<h2 id="crafting-types">Crafting types<a hidden class="anchor" aria-hidden="true" href="#crafting-types">#</a></h2>
+<p>In order to build type we obviously need a macro. The goal of this macro will be to take a typed table in input, and output a refined schema.</p>
+<p>Since the return type of our macro will be dependent on the input we will have to use infamous <code>transparent</code> keyword together with a token <code>Any</code> return type.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#66d9ef">case</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Table</span><span style="color:#f92672">[</span><span style="color:#66d9ef">Ns</span> <span style="color:#66d9ef">&lt;:</span> <span style="color:#66d9ef">Tuple</span>, <span style="color:#66d9ef">Ts</span> <span style="color:#66d9ef">&lt;:</span> <span style="color:#66d9ef">Tuple</span><span style="color:#f92672">](</span>cols<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Map</span><span style="color:#f92672">[</span><span style="color:#66d9ef">String</span>, <span style="color:#66d9ef">Col</span><span style="color:#f92672">[</span><span style="color:#66d9ef">?</span><span style="color:#f92672">]])</span><span style="color:#66d9ef">:</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// addCol impl //
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>    transparent inline <span style="color:#66d9ef">def</span> schema<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Any</span> <span style="color:#f92672">=</span>
+</span></span><span style="display:flex;"><span>        $<span style="color:#f92672">{</span> macros<span style="color:#f92672">.</span>schemaImpl<span style="color:#f92672">(</span>&#39;this<span style="color:#f92672">)</span> <span style="color:#f92672">}</span>
+</span></span></code></pre></div><p>Here is the complete macro implementation, don&rsquo;t worry we are going to explain it line by line.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#66d9ef">def</span> schemaImpl<span style="color:#f92672">[</span><span style="color:#66d9ef">Ns</span> <span style="color:#66d9ef">&lt;:</span> <span style="color:#66d9ef">Tuple</span>, <span style="color:#66d9ef">Ts</span> <span style="color:#66d9ef">&lt;:</span> <span style="color:#66d9ef">Tuple</span><span style="color:#f92672">](</span>table<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Expr</span><span style="color:#f92672">[</span><span style="color:#66d9ef">Table</span><span style="color:#f92672">[</span><span style="color:#66d9ef">Ns</span>, <span style="color:#66d9ef">Ts</span><span style="color:#f92672">]])(</span>using <span style="color:#a6e22e">Quotes</span><span style="color:#f92672">,</span> <span style="color:#a6e22e">Type</span><span style="color:#f92672">[</span><span style="color:#66d9ef">Ns</span><span style="color:#f92672">],</span> <span style="color:#a6e22e">Type</span><span style="color:#f92672">[</span><span style="color:#66d9ef">Ts</span><span style="color:#f92672">])</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Expr</span><span style="color:#f92672">[</span><span style="color:#66d9ef">Any</span><span style="color:#f92672">]</span> <span style="color:#66d9ef">=</span> 
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">import</span> quotes.reflect.<span style="color:#f92672">*</span> <span style="color:#75715e">// 1
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">val</span> names <span style="color:#66d9ef">=</span> utils<span style="color:#f92672">.</span>stringsFromTuple<span style="color:#f92672">[</span><span style="color:#66d9ef">Ns</span><span style="color:#f92672">]</span>    <span style="color:#75715e">// 2
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#66d9ef">val</span> types <span style="color:#66d9ef">=</span> utils<span style="color:#f92672">.</span>typesFromTuple<span style="color:#f92672">[</span><span style="color:#66d9ef">Ts</span><span style="color:#f92672">].</span>map<span style="color:#66d9ef">:</span> <span style="color:#75715e">// 2
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#66d9ef">case</span> <span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#f92672">[</span><span style="color:#66d9ef">t</span><span style="color:#f92672">]</span> <span style="color:#66d9ef">=&gt;</span> <span style="color:#a6e22e">Type</span><span style="color:#f92672">.</span>of<span style="color:#f92672">[</span><span style="color:#66d9ef">Col</span><span style="color:#f92672">[</span><span style="color:#66d9ef">t</span><span style="color:#f92672">]]</span>          <span style="color:#75715e">// 3
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">val</span> refinements <span style="color:#66d9ef">=</span> names<span style="color:#f92672">.</span>zip<span style="color:#f92672">(</span>types<span style="color:#f92672">).</span>foldLeft<span style="color:#f92672">(</span><span style="color:#a6e22e">Type</span><span style="color:#f92672">.</span>of<span style="color:#f92672">[</span><span style="color:#66d9ef">Schema</span><span style="color:#f92672">]</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Type</span><span style="color:#f92672">[</span><span style="color:#66d9ef">?</span><span style="color:#f92672">])</span><span style="color:#66d9ef">:</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">acc</span><span style="color:#f92672">,</span> <span style="color:#66d9ef">p</span><span style="color:#f92672">)</span> <span style="color:#66d9ef">=&gt;</span> <span style="color:#75715e">// 4
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>          <span style="color:#f92672">((</span>acc<span style="color:#f92672">,</span> p<span style="color:#f92672">)</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">@unchecked</span><span style="color:#f92672">)</span> <span style="color:#66d9ef">match</span>                                                 <span style="color:#75715e">// 5
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>            <span style="color:#66d9ef">case</span> <span style="color:#f92672">(</span><span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#f92672">[</span><span style="color:#66d9ef">acc</span><span style="color:#f92672">],</span> <span style="color:#f92672">(</span>l<span style="color:#f92672">,</span> <span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#f92672">[</span><span style="color:#66d9ef">e</span><span style="color:#f92672">]))</span> <span style="color:#66d9ef">=&gt;</span>
+</span></span><span style="display:flex;"><span>              <span style="color:#a6e22e">Refinement</span><span style="color:#f92672">(</span><span style="color:#a6e22e">TypeRepr</span><span style="color:#f92672">.</span>of<span style="color:#f92672">[</span><span style="color:#66d9ef">acc</span><span style="color:#f92672">],</span> l<span style="color:#f92672">,</span> <span style="color:#a6e22e">TypeRepr</span><span style="color:#f92672">.</span>of<span style="color:#f92672">[</span><span style="color:#66d9ef">e</span><span style="color:#f92672">]).</span>asType                   <span style="color:#75715e">// 6
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>    refinements <span style="color:#66d9ef">match</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">case</span> <span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#f92672">[</span><span style="color:#66d9ef">refined</span><span style="color:#f92672">]</span> <span style="color:#66d9ef">=&gt;</span> <span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#f92672">{</span><span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Schema</span><span style="color:#f92672">(</span><span style="color:#a6e22e">$table</span><span style="color:#f92672">).</span>asInstanceOf<span style="color:#f92672">[</span><span style="color:#66d9ef">refined</span><span style="color:#f92672">]}</span>                 <span style="color:#75715e">// 7
+</span></span></span></code></pre></div><ol>
+<li><code>quotes.reflect.*</code> is needed to unlock powerful macro features like type building or compile time reporting</li>
+<li>These helpers materialize the <code>Ns</code> tuples in a list of constant Strings, and <code>Ts</code> is a list of <code>Type[?]</code>, which is the reflection entrypoint for types in scala macros. You can find the original implemention <a href="https://github.com/bishabosha/ops-mirror/blob/main/src/macros/OpsMirror.scala">here</a>.</li>
+<li>Here we map the columns inner type to get the desired column value. We could have specialized more there, for instance retrurning <code>Type.of[IntCol]</code> on <code>case '[Int]</code>.</li>
+<li>Using labels and types, we fold over the Schema type to build the refinement.</li>
+<li>Weird case of pattern matching which dissaloy matching <code>Type</code> (the <code>case '[e]</code> patterns)</li>
+</ol>
+<p>And finally we get the desired result: compile time guarantee that we can access strongly typed fields in a user-defined semi-static object.</p>
+<h1 id="conclusion">Conclusion<a hidden class="anchor" aria-hidden="true" href="#conclusion">#</a></h1>
+<p>Building refinements is a very advanced feature of the language, that require a good understanding of the underlying machinery regarding types. The price is high, but the benefits to have reliable, auto-complete aware type-safe APIs is priceless.</p>
+<p>A programing language is often judged not by its features or its complexity but by the quality of its tooling. Scala suffers from the inverse problem : a poor tooling hampering a nice, concise and beatiful language.</p>
+<p>Let&rsquo;s bring more ide support and tooling for our users, let&rsquo;s use refinement types !</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2024 <a href="https://vbergeron.github.io/">vbergeron.github.io</a></span> · 
+
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>

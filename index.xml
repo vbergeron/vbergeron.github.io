@@ -4,17 +4,33 @@
     <title>vbergeron.github.io</title>
     <link>https://vbergeron.github.io/</link>
     <description>Recent content on vbergeron.github.io</description>
-    <generator>Hugo -- gohugo.io</generator>
+    <generator>Hugo -- 0.139.4</generator>
     <language>en-us</language>
-    <lastBuildDate>Fri, 21 Apr 2023 14:48:55 +0200</lastBuildDate><atom:link href="https://vbergeron.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Tue, 10 Dec 2024 22:48:55 +0100</lastBuildDate>
+    <atom:link href="https://vbergeron.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Distilling Refined Types using Scala 3</title>
+      <link>https://vbergeron.github.io/posts/0002-refinements/</link>
+      <pubDate>Tue, 10 Dec 2024 22:48:55 +0100</pubDate>
+      <guid>https://vbergeron.github.io/posts/0002-refinements/</guid>
+      <description>&lt;h1 id=&#34;introduction&#34;&gt;Introduction&lt;/h1&gt;
+&lt;p&gt;Before introducing refinement types, let&amp;rsquo;s suppose you are a library author, and you have a tricky situation to solve. One of your library objects can refer to other objects by their &lt;em&gt;name&lt;/em&gt;.&lt;/p&gt;
+&lt;p&gt;Very abstract don&amp;rsquo;t you think ? But when you start to look around, a lot of these cases exists.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Relational Tables (columns registered in a table object)&lt;/li&gt;
+&lt;li&gt;Forms&lt;/li&gt;
+&lt;li&gt;RPC handle collections&lt;/li&gt;
+&lt;li&gt;HTTP Routes&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Two main problems arise when using these :&lt;/p&gt;</description>
+    </item>
     <item>
       <title>Field Maps</title>
       <link>https://vbergeron.github.io/posts/0001-fieldmaps/</link>
       <pubDate>Fri, 21 Apr 2023 14:48:55 +0200</pubDate>
-      
       <guid>https://vbergeron.github.io/posts/0001-fieldmaps/</guid>
-      <description>Introduction Let&amp;rsquo;s talk about a kind of common issue in programing. Imagine you have a large form to fill, or a SQL table to select column from, or really any type of data where you are interested by selecting subsets of its atomic components (like form results, or SQL columns). I call this data structures field maps data, and let&amp;rsquo;s see how we can implement the using the power of the Scala 3 language.</description>
+      <description>&lt;h1 id=&#34;introduction&#34;&gt;Introduction&lt;/h1&gt;
+&lt;p&gt;Let&amp;rsquo;s talk about a kind of common issue in programing. Imagine you have a large form to fill, or a SQL table to select column from, or really any type of data where you are interested by selecting subsets of its atomic components (like form results, or SQL columns). I call this data structures &lt;em&gt;field maps&lt;/em&gt; data, and let&amp;rsquo;s see how we can implement the using the power of the Scala 3 language.&lt;/p&gt;</description>
     </item>
-    
   </channel>
 </rss>
